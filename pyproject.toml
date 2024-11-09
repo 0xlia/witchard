@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "witchard"
+version = "0.1.0"
+description = "Wizard, but online 🔥"
+authors = ["0xlia <lia2000@mac.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.4"
+uvicorn = "^0.32.0"
+fastapi-sessions = "^0.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

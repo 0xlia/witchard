@@ -4,8 +4,8 @@ class Card:
         self.value = value
         
     def __str__(self):
-        if self.suit == "JESTER":
-            return "JESTER"
-        elif self.suit == "WITCH":
-            return "WITCH"
-        return f"{self.value} {self.suit}"
+        if self.value == 0:
+            return f"[🎭 {self.suit}]"
+        elif self.value == 420:
+            return f"[🧙‍♀️ {self.suit}]"
+        return f"[{self.value} {self.suit}]"
