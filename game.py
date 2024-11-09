@@ -6,6 +6,7 @@ class WitchardGame:
     def __init__(self, num_players: int):
         self.num_players = num_players
         self.player_names = []
+        self.round_number = 0
         self.scores = {}
         self.deck = self._create_deck()
         
@@ -43,56 +44,81 @@ class WitchardGame:
         # Main game loop
         rounds = 60 // self.num_players
         for round_num in range(1, rounds + 1):
-            print(f"\n=== Round {round_num} ===")
-            self._play_round(round_num)
+            self.round_number += 1
+            print(f"\n=== Round {self.round_number} ===")
+            self._play_round()
             
         self._show_final_score()
 
-    def _play_round(self, round_num: int):
+    def _play_round(self):
         self._shuffle_cards()
-        hands = self._deal_cards(round_num)
-        trumpf_card = self._determine_trumpf(round_num)
+        hands = self._deal_cards()
+        trumpf_card = self._determine_trumpf()
         
-        # Bestimme den Startspieler für diese Runde
-        start_player_index = (round_num - 1) % len(self.player_names)
-        # Erstelle die Spielerreihenfolge für die gesamte Runde
+        # Determine the starting player for this round
+        start_player_index = (self.round_number - 1) % len(self.player_names)
+        # Create the player order for the entire round
         current_player_order = self.player_names[start_player_index:] + self.player_names[:start_player_index]
         
-        print(f"\n=== Runde {round_num} ===")
-        print(f"Startspieler: {current_player_order[0]}")
+        print(f"Starting player: {current_player_order[0]}")
         print(f"Trumpf: {trumpf_card}")
         
         predictions = self._get_predictions(hands, current_player_order)
-        tricks_won = self._play_tricks(round_num, hands, trumpf_card, current_player_order)
+        tricks_won = self._play_tricks(self.round_number, hands, trumpf_card, current_player_order)
         self._update_scores(predictions, tricks_won)
 
-    def _deal_cards(self, round_num: int) -> dict:
+    def _deal_cards(self) -> dict:
         hands = {player: [] for player in self.player_names}
-        for _ in range(round_num):
+        for _ in range(self.round_number):
             for player in self.player_names:
                 hands[player].append(self.deck.pop())
         return hands
 
-    def _determine_trumpf(self, round_num: int) -> Card:
-        if round_num < len(self.deck):
-            return self.deck.pop()
+    def _determine_trumpf(self) -> Card:
+        if len(self.deck) > 0:
+            trumpf_card = self.deck.pop()
+            
+            # If a Jester is revealed, there is no trump suit for this round
+            if trumpf_card.suit == "JESTER":
+                print("A Jester was revealed - No trump suit this round!")
+                return None
+                
+            return trumpf_card
         return None
 
     def _get_predictions(self, hands: dict, player_order: list) -> dict:
         predictions = {}
-        print("\n=== Vorhersagen ===")
+        total_predictions = 0
+        print("\n=== Predictions ===")
         
-        for player in player_order:
-            print(f"\n{player}'s Karten:")
+        for i, player in enumerate(player_order):
+            print(f"\n{player}'s cards:")
             for card in hands[player]:
                 print(card)
+                
+            # For the last player, check if prediction would equal round number
+            is_last_player = i == len(player_order) - 1
+            round_num = len(hands[player])
+            
             while True:
                 try:
-                    pred = int(input(f"{player}, wie viele Stiche wirst du gewinnen? "))
+                    pred = int(input(f"{player}, how many tricks will you win? "))
+                    if pred < 0 or pred > round_num:
+                        print("Prediction must be between 0 and the round number!")
+                        continue
+                        
+                    if is_last_player and (total_predictions + pred) == round_num:
+                        print(f"Sum of predictions cannot equal {round_num}! Please choose another number.")
+                        continue
+                        
                     predictions[player] = pred
+                    total_predictions += pred
                     break
                 except ValueError:
-                    print("Bitte gib eine gültige Zahl ein!")
+                    print("Invalid input!")
+        
+        # Show total predictions vs round number
+        print(f"\nTotal predictions: {total_predictions}/{round_num}")
         
         return predictions
     
@@ -152,7 +178,7 @@ class WitchardGame:
                 # If the first card is not a WITCH
                 elif winning_card.suit != "WITCH":
                     # If trump was played and winning card is not trump
-                    if card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
+                    if trumpf_card and card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
                         winning_card = card
                     # If same suit was played and value is higher
                     elif card.suit == lead_suit and card.value > winning_card.value:
@@ -186,6 +212,6 @@ class WitchardGame:
             
             # Zeige die Rundenauswertung
             print(f"\n{player}:")
-            print(f"Vorhergesagt: {predicted}, Gewonnen: {actual}")
-            print(f"Punkte diese Runde: {points}")
-            print(f"Gesamtpunktzahl: {self.scores[player]}")
+            print(f"Predicted: {predicted}, Won: {actual}")
+            print(f"Points this round: {points}")
+            print(f"Total score: {self.scores[player]}")
