@@ -100,69 +100,68 @@ class WitchardGame:
         tricks_won = {player: 0 for player in self.player_names}
         
         for trick in range(round_num):
-            print(f"\n=== Stich {trick + 1} ===")
+            print(f"\n=== Trick {trick + 1} ===")
             played_cards = []
             played_by = {}
-            
-            # Jeder Spieler spielt eine Karte in der festgelegten Reihenfolge
+           
             for player in player_order:
-                print(f"\n{player}'s Karten:")
+                print(f"\n{player}'s Cards:")
                 for i, card in enumerate(hands[player]):
-                    print(f"{i}: {card}")
-                
-                # Bestimme die zu bedienende Farbe (erste gespielte Karte des Stichs)
-                lead_suit = played_cards[0].suit if played_cards else None
+                    print(f"{i}: {card}")      
+
+                # Determine the leading suit (first card played in the trick)
+                lead_suit = played_cards[0].suit if played_cards else None         
                 
                 while True:
                     try:
-                        choice = int(input(f"{player}, wähle eine Karte (0-{len(hands[player])-1}): "))
+                        choice = int(input(f"{player}, pick a card (0-{len(hands[player])-1}): "))
                         if 0 <= choice < len(hands[player]):
                             selected_card = hands[player][choice]
                             
-                            # Prüfe, ob die Kartenwahl legal ist
+                            # Check if the card choice is legal
                             if lead_suit and lead_suit not in ["WITCH", "JESTER"]:
-                                # Prüfe, ob der Spieler die Farbe bedienen kann
+                                # Check if player can follow suit
                                 has_lead_suit = any(card.suit == lead_suit for card in hands[player])
                                 
-                                # Wenn der Spieler bedienen kann, muss er bedienen
-                                # Ausnahme: WITCH und JESTER dürfen immer gespielt werden
+                                # If player can follow suit, they must do so
+                                # Exception: WITCH and Jester can always be played
                                 if has_lead_suit and selected_card.suit != lead_suit and \
                                    selected_card.suit not in ["WITCH", "JESTER"]:
-                                    print(f"Du musst {lead_suit} bedienen!")
+                                    print(f"You must follow suit!")
                                     continue
                             
-                            # Wenn die Wahl legal ist, spiele die Karte
+                            # If the choice is legal, play the card
                             played_card = hands[player].pop(choice)
                             played_cards.append(played_card)
                             played_by[played_card] = player
-                            print(f"{player} spielt {played_card}")
+                            print(f"{player} plays {played_card}")
                             break
                         else:
-                            print("Ungültige Kartennummer!")
+                            print("Invalid card number!")
                     except ValueError:
-                        print("Bitte gib eine gültige Zahl ein!")
+                        print("Invalid input!")
             
-            # Ermittle die Gewinnerkarte
+            # Determine the winning card
             winning_card = played_cards[0]
             lead_suit = played_cards[0].suit
             
             for card in played_cards[1:]:
-                # Wenn eine WITCH gespielt wurde
+                # If a WITCH was played
                 if card.suit == "WITCH":
                     winning_card = card
-                # Wenn die erste Karte keine WITCH ist
+                # If the first card is not a WITCH
                 elif winning_card.suit != "WITCH":
-                    # Wenn Trumpf gespielt wurde und die Gewinnerkarte kein Trumpf ist
+                    # If trump was played and winning card is not trump
                     if card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
                         winning_card = card
-                    # Wenn die gleiche Farbe gespielt wurde und der Wert höher ist
+                    # If same suit was played and value is higher
                     elif card.suit == lead_suit and card.value > winning_card.value:
                         winning_card = card
             
-            # Gewinner des Stichs ermitteln
+            # Determine trick winner and update scores
             trick_winner = played_by[winning_card]
             tricks_won[trick_winner] += 1
-            print(f"\n{trick_winner} gewinnt den Stich mit {winning_card}!")
+            print(f"\n{trick_winner} wins the trick with {winning_card}!")
             
         return tricks_won
 
