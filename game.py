@@ -36,10 +36,8 @@ class WitchardGame:
         print("Welcome to Witchard!")
         
         # Enter player names
-        for i in range(self.num_players):
-            name = input(f"Name for Player {i+1}: ")
-            self.player_names.append(name)
-            self.scores[name] = 0
+        self.player_names = self._get_player_names()
+        self.scores = {player: 0 for player in self.player_names}
             
         # Main game loop
         rounds = 60 // self.num_players
@@ -50,10 +48,29 @@ class WitchardGame:
             
         self._show_final_score()
 
+    def _get_player_names(self) -> list:
+        player_names = []
+        print("\nEnter player names:")
+        
+        for i in range(self.num_players):
+            while True:
+                name = input(f"Player {i+1}: ").strip()
+                if name == "":
+                    print("Der Name darf nicht leer sein!")
+                    continue
+                if name in player_names:
+                    print("Dieser Name wurde bereits vergeben!")
+                    continue
+                player_names.append(name)
+                break
+                
+        return player_names
+
+
     def _play_round(self):
         self._shuffle_cards()
         hands = self._deal_cards()
-        trumpf_card = self._determine_trumpf()
+        trumpf_card = self._determine_trumpf(hands)
         
         # Determine the starting player for this round
         start_player_index = (self.round_number - 1) % len(self.player_names)
@@ -74,7 +91,7 @@ class WitchardGame:
                 hands[player].append(self.deck.pop())
         return hands
 
-    def _determine_trumpf(self) -> Card:
+    def _determine_trumpf(self, hands: dict) -> Card:
         if len(self.deck) > 0:
             trumpf_card = self.deck.pop()
             
@@ -82,6 +99,32 @@ class WitchardGame:
             if trumpf_card.suit == "JESTER":
                 print("A Jester was revealed - No trump suit this round!")
                 return None
+                
+            # If a WITCH is revealed, the last player can choose the trump suit
+            if trumpf_card.suit == "WITCH":
+                last_player = self.player_names[(self.round_number - 1 + self.num_players - 1) % self.num_players]
+                print(f"A WITCH was revealed! {last_player} darf den Trumpf bestimmen.")
+
+                if self.round_number == 1:
+                    # print all cards of other players than last player
+                    print("\nCards of other players:")
+                    for player in self.player_names:
+                        if player != last_player:
+                            print(f"\n{player}'s cards:")
+                            for card in hands[player]:
+                                print(card)
+                
+                suits = ["RED", "YELLOW", "GREEN", "BLUE"]
+                while True:
+                    try:
+                        choice = int(input(f"{last_player}, Choose a suit: (0: RED, 1: YELLOW, 2: GREEN, 3: BLUE): "))
+                        if 0 <= choice < len(suits):
+                            chosen_suit = suits[choice]
+                            return Card(chosen_suit, 0)
+                        else:
+                            print("Invalid choice!")
+                    except ValueError:
+                        print("Invalid input!")
                 
             return trumpf_card
         return None
@@ -92,9 +135,19 @@ class WitchardGame:
         print("\n=== Predictions ===")
         
         for i, player in enumerate(player_order):
-            print(f"\n{player}'s cards:")
-            for card in hands[player]:
-                print(card)
+            # Round 1: Show other players' cards
+            if self.round_number == 1:
+                print(f"\nCards of other players:")
+                for other_player in player_order:
+                    if other_player != player:
+                        print(f"\n{other_player}'s cards:")
+                        for card in hands[other_player]:
+                            print(card)
+            else:
+                # Normal game: Show own cards
+                print(f"\n{player}'s cards:")
+                for card in hands[player]:
+                    print(card)
                 
             # For the last player, check if prediction would equal round number
             is_last_player = i == len(player_order) - 1
@@ -138,19 +191,28 @@ class WitchardGame:
                 # Determine the leading suit (first card played in the trick)
                 lead_suit = played_cards[0].suit if played_cards else None         
                 
+                # Wenn die erste Karte ein JESTER ist und es bereits weitere Karten gibt,
+                # setze die Leading Suit auf die erste Nicht-JESTER Karte
+                if lead_suit == "JESTER" and len(played_cards) > 1:
+                    for card in played_cards[1:]:
+                        if card.suit != "JESTER":
+                            lead_suit = card.suit
+                            break
+                
                 while True:
                     try:
                         choice = int(input(f"{player}, pick a card (0-{len(hands[player])-1}): "))
                         if 0 <= choice < len(hands[player]):
                             selected_card = hands[player][choice]
                             
-                            # Check if the card choice is legal
+                            # Prüfe ob die Kartenwahl legal ist
+                            # Wenn die erste Karte eine WITCH ist, muss nicht bedient werden
                             if lead_suit and lead_suit not in ["WITCH", "JESTER"]:
                                 # Check if player can follow suit
                                 has_lead_suit = any(card.suit == lead_suit for card in hands[player])
                                 
                                 # If player can follow suit, they must do so
-                                # Exception: WITCH and Jester can always be played
+                                # Exception: WITCH and JESTER can always be played
                                 if has_lead_suit and selected_card.suit != lead_suit and \
                                    selected_card.suit not in ["WITCH", "JESTER"]:
                                     print(f"You must follow suit!")
@@ -170,13 +232,22 @@ class WitchardGame:
             # Determine the winning card
             winning_card = played_cards[0]
             lead_suit = played_cards[0].suit
+
+            # If the first card is a JESTER, the next non-JESTER card is the winning card
+            if winning_card.suit == "JESTER":
+                for card in played_cards[1:]:
+                    if card.suit != "JESTER":
+                        winning_card = card
+                        lead_suit = card.suit
+                        break
             
-            for card in played_cards[1:]:
+            for card in played_cards:
                 # If a WITCH was played
                 if card.suit == "WITCH":
                     winning_card = card
+                    break
                 # If the first card is not a WITCH
-                elif winning_card.suit != "WITCH":
+                else:
                     # If trump was played and winning card is not trump
                     if trumpf_card and card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
                         winning_card = card
