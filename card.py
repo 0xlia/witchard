@@ -5,7 +5,7 @@ class Card:
         
     def __str__(self):
         if self.value == 0:
-            return f"[🎭 {self.suit}]"
+            return f"[💀 {self.suit}]"
         elif self.value == 420:
-            return f"[🧙‍♀️ {self.suit}]"
+            return f"[🧙 {self.suit}]"
         return f"[{self.value} {self.suit}]"

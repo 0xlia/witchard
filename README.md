@@ -1,5 +1,16 @@
-# witchard
+# Witchard
 
+Wizard but online and with witches
 
+## 🎮 Features
 
--  Was cool wäre, wenn es einen Beobachter Mode gibt, den du im Stream dann Teilen könntest und dann auf dem zweiten Bildschrim deine Karten hast ohne dein Deck zu leaken
+### Schon implementiert
+- Grundlegendes [Spielsystem)](https://blog.amigo-spiele.de/content/ap/rule/06900-GB-AmigoRule.pdf)
+
+### Gewünschte Features
+- Lobby erstellen und teilen
+- Lobby beitreten
+- Beobachter Mode um im STream eigene Karten nicht zu leaken
+- Chatfunktion
+- verschiedene Modi
+- Matchmaking
