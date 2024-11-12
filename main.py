@@ -2,7 +2,7 @@ from game import WitchardGame
 import sys
 
 def main():
-    game = WitchardGame(num_players=4)
+    game = WitchardGame()
     game.start_game()
 
 

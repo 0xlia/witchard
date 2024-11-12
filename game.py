@@ -5,13 +5,23 @@ from typing import List, Tuple
 SUITS = ["🔴", "🟡", "🟢", "🔵"]
 
 class WitchardGame:
-    def __init__(self, num_players: int):
-        self.num_players = num_players
+    def __init__(self):
+        self.num_players = None        
         self.player_names = []
         self.round_number = 0
         self.scores = {}
         self.deck = self._create_deck()
         
+    def _get_num_players(self) -> int:
+        while True:
+            try:
+                num = int(input("Enter number of players (3-6): "))
+                if 3 <= num <= 6:
+                    return num
+                print("Number of players must be between 3 and 6!")
+            except ValueError:
+                print("Please enter a valid number!")
+    
     def _create_deck(self) -> List[Card]:
         deck = []
         
@@ -33,7 +43,10 @@ class WitchardGame:
         random.shuffle(self.deck)
         
     def start_game(self):
-        print("✨ Welcome to Witchard! ✨")
+        print("✨ Welcome to Witchard! ✨\n")
+
+        # Enter number of players
+        self.num_players = self._get_num_players()
         
         # Enter player names
         self.player_names = self._get_player_names()
