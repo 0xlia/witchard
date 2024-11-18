@@ -5,23 +5,17 @@ from typing import List, Tuple
 SUITS = ["🔴", "🟡", "🟢", "🔵"]
 
 class WitchardGame:
-    def __init__(self):
-        self.num_players = None        
+    def __init__(self, num_players: int):
+        self.num_players = num_players
         self.player_names = []
         self.round_number = 0
         self.scores = {}
         self.deck = self._create_deck()
-        
-    def _get_num_players(self) -> int:
-        while True:
-            try:
-                num = int(input("Enter number of players (3-6): "))
-                if 3 <= num <= 6:
-                    return num
-                print("Number of players must be between 3 and 6!")
-            except ValueError:
-                print("Please enter a valid number!")
-    
+        self.hands = {player: [] for player in self.player_names}
+        self.trumpf_card = None
+        self.played_cards = []
+        self.current_player = None
+           
     def _create_deck(self) -> List[Card]:
         deck = []
         
@@ -41,15 +35,18 @@ class WitchardGame:
     
     def _shuffle_cards(self):
         random.shuffle(self.deck)
-        
+    
+    def add_player(self, player_name: str) -> bool:
+        if len(self.player_names) >= self.num_players:
+            return False
+        self.player_names.append(player_name)
+        self.scores[player_name] = 0
+        return True    
+    
     def start_game(self):
         print("✨ Welcome to Witchard! ✨\n")
-
-        # Enter number of players
-        self.num_players = self._get_num_players()
         
         # Enter player names
-        self.player_names = self._get_player_names()
         self.scores = {player: 0 for player in self.player_names}
             
         # Main game loop
@@ -61,50 +58,32 @@ class WitchardGame:
             
         self._show_final_score()
 
-    def _get_player_names(self) -> list:
-        player_names = []
-        print("\nEnter player names:")
-        
-        for i in range(self.num_players):
-            while True:
-                name = input(f"Player {i+1}: ").strip()
-                if name == "":
-                    print("The name cannot be empty!")
-                    continue
-                if name in player_names:
-                    print("This name is already taken!")
-                    continue
-                player_names.append(name)
-                break
-                
-        return player_names
-
-
     def _play_round(self):
         self._shuffle_cards()
-        hands = self._deal_cards()
-        trumpf_card = self._determine_trumpf(hands)
+        self._deal_cards()
+        self._determine_trumpf()
         
         # Determine the starting player for this round
         start_player_index = (self.round_number - 1) % len(self.player_names)
         # Create the player order for the entire round
         current_player_order = self.player_names[start_player_index:] + self.player_names[:start_player_index]
-        
+        self.current_player = current_player_order[0]
+
         print(f"\nStarting player: {current_player_order[0]}")
-        print(f"Trumpf: {trumpf_card}")
+        print(f"Trumpf: {self.trumpf_card}")
         
-        predictions = self._get_predictions(hands, current_player_order)
-        tricks_won = self._play_tricks(self.round_number, hands, trumpf_card, current_player_order)
+        predictions = self._get_predictions(current_player_order)
+        tricks_won = self._play_tricks(self.trumpf_card, current_player_order)
         self._update_scores(predictions, tricks_won)
 
-    def _deal_cards(self) -> dict:
+    def _deal_cards(self):
         hands = {player: [] for player in self.player_names}
         for _ in range(self.round_number):
             for player in self.player_names:
                 hands[player].append(self.deck.pop())
-        return hands
+        self.hands = hands
 
-    def _determine_trumpf(self, hands: dict) -> Card:
+    def _determine_trumpf(self):
         if len(self.deck) > 0:
             trumpf_card = self.deck.pop()
             
@@ -124,7 +103,7 @@ class WitchardGame:
                     for player in self.player_names:
                         if player != last_player:
                             print(f"\n{player}'s cards:")
-                            for card in hands[player]:
+                            for card in self.hands[player]:
                                 print(card)
                 
                 while True:
@@ -138,10 +117,10 @@ class WitchardGame:
                     except ValueError:
                         print("Invalid input!")
                 
-            return trumpf_card
-        return None
+            self.trumpf_card = trumpf_card
+        self.trumpf_card = None
 
-    def _get_predictions(self, hands: dict, player_order: list) -> dict:
+    def _get_predictions(self, player_order: list) -> dict:
         predictions = {}
         total_predictions = 0
         print("\n▪️▪️▪️ Predictions ▪️▪️▪️")
@@ -153,27 +132,26 @@ class WitchardGame:
                 for other_player in player_order:
                     if other_player != player:
                         print(f"\n{other_player}'s cards:")
-                        for card in hands[other_player]:
+                        for card in self.hands[other_player]:
                             print(card)
             else:
                 # Normal game: Show own cards
                 print(f"\n{player}'s cards:")
-                for card in hands[player]:
+                for card in self.hands[player]:
                     print(card)
                 
             # For the last player, check if prediction would equal round number
             is_last_player = i == len(player_order) - 1
-            round_num = len(hands[player])
             
             while True:
                 try:
                     pred = int(input(f"\n{player}, how many tricks will you win? "))
-                    if pred < 0 or pred > round_num:
+                    if pred < 0 or pred > self.round_number:
                         print("Prediction must be between 0 and the round number!")
                         continue
                         
-                    if is_last_player and (total_predictions + pred) == round_num:
-                        print(f"Sum of predictions cannot equal {round_num}! Please choose another number.")
+                    if is_last_player and (total_predictions + pred) == self.round_number:
+                        print(f"Sum of predictions cannot equal {self.round_number}! Please choose another number.")
                         continue
                         
                     predictions[player] = pred
@@ -184,23 +162,22 @@ class WitchardGame:
             print("\n▪️▪️▪️▪️▪️▪️")
         
         # Show total predictions vs round number
-        print(f"\nTotal predictions: {total_predictions}/{round_num}")
+        print(f"\nTotal predictions: {total_predictions}/{self.round_number}")
         
         return predictions
     
-    def _play_tricks(self, round_num: int, hands: dict, trumpf_card: Card, player_order: list) -> dict:
+    def _play_tricks(self, player_order: list) -> dict:
         tricks_won = {player: 0 for player in self.player_names}
         
-        for trick in range(round_num):
+        for trick in range(self.round_number):
             print(f"\n▪️▪️▪️  Trick {trick + 1} ▪️▪️▪️ ")
-            played_cards = []
             played_by = {}
            
             for player in player_order:
                 # If only one card is left, play it automatically
-                if len(hands[player]) == 1:
-                    played_card = hands[player].pop(0)
-                    played_cards.append(played_card)
+                if len(self.hands[player]) == 1:
+                    played_card = self.hands[player].pop(0)
+                    self.played_cards.append(played_card)
                     played_by[played_card] = player
                     print(f"\n{player} plays {played_card}")
                     print("\n▪️▪️▪️▪️▪️▪️")
@@ -208,31 +185,31 @@ class WitchardGame:
 
                 # Show player's cards
                 print(f"\n{player}'s cards:")
-                for i, card in enumerate(hands[player]):
+                for i, card in enumerate(self.hands[player]):
                     print(f"{i}: {card}")      
 
                 # Determine the leading suit (first card played in the trick)
-                lead_suit = played_cards[0].suit if played_cards else None
+                lead_suit = self.played_cards[0].suit if self.played_cards else None
                 
                 # If the first card is a JESTER and there are more cards,
                 # set the leading suit to the first non-JESTER card
-                if played_cards and played_cards[0].value == 0 and len(played_cards) > 1:
-                    for card in played_cards[1:]:
+                if self.played_cards and self.played_cards[0].value == 0 and len(self.played_cards) > 1:
+                    for card in self.played_cards[1:]:
                         if card.value != 0:
                             lead_suit = card.suit
                             break
                 
                 while True:
                     try:
-                        choice = int(input(f"\n{player}, pick a card (0-{len(hands[player])-1}): "))
-                        if 0 <= choice < len(hands[player]):
-                            selected_card = hands[player][choice]
+                        choice = int(input(f"\n{player}, pick a card (0-{len(self.hands[player])-1}): "))
+                        if 0 <= choice < len(self.hands[player]):
+                            selected_card = self.hands[player][choice]
                             
                             # Check if the card choice is legal
                             # If the first card is a WITCH, suit doesn't need to be followed
                             if lead_suit and not any(c.value == 420 for c in played_cards):
                                 # Check if player can follow suit
-                                has_lead_suit = any(card.suit == lead_suit for card in hands[player])
+                                has_lead_suit = any(card.suit == lead_suit for card in self.hands[player])
                                 
                                 # If player can follow suit, they must do so
                                 # Exception: WITCH and JESTER can always be played
@@ -242,7 +219,7 @@ class WitchardGame:
                                     continue
                             
                             # If the choice is legal, play the card
-                            played_card = hands[player].pop(choice)
+                            played_card = self.hands[player].pop(choice)
                             played_cards.append(played_card)
                             played_by[played_card] = player
                             print(f"\n{player} plays {played_card}")
@@ -253,7 +230,7 @@ class WitchardGame:
                         print("Invalid input!")
                 print("\n▪️▪️▪️▪️▪️▪️")
             
-            winning_card = self._get_winning_card(played_cards, trumpf_card)
+            winning_card = self._get_winning_card(played_cards)
             
             # Determine trick winner and update scores
             trick_winner = played_by[winning_card]
@@ -262,7 +239,7 @@ class WitchardGame:
             
         return tricks_won
     
-    def _get_winning_card(self, played_cards: list, trumpf_card: Card) -> Card:
+    def _get_winning_card(self, played_cards: list) -> Card:
         # Determine the winning card
         winning_card = played_cards[0]
         lead_suit = played_cards[0].suit
@@ -283,7 +260,7 @@ class WitchardGame:
             # If no WITCH has been played yet
             elif winning_card.value != 420:
                 # If trump was played and winning card is not trump
-                if trumpf_card and card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
+                if self.trumpf_card and card.suit == self.trumpf_card.suit and winning_card.suit != self.trumpf_card.suit:
                     winning_card = card
                 # If same suit was played and value is higher
                 elif card.suit == lead_suit and card.value > winning_card.value:
@@ -315,3 +292,16 @@ class WitchardGame:
             print(f"Predicted: {predicted}, Won: {actual}")
             print(f"Points this round: {points}")
             print(f"Total score: {self.scores[player]}")
+
+    def get_player_state(self, player_name: str) -> dict:
+        return {
+            "is_your_turn": self.current_player == player_name,
+            "players": self.player_names,
+            "num_players": self.num_players,
+            "game_started": len(self.player_names) >= self.num_players,
+            "scores": self.scores,
+            "round": self.round_number,
+            "trumpf": self.trumpf_card,
+            "played_cards": self.played_cards,
+            "hand": self.hands.get(player_name, [])        
+        }
