@@ -1,0 +1,82 @@
+---
+description: This rule ensures that client-side code accurately reflects the data structures provided by backend APIs.
+globs: 
+alwaysApply: false
+---
+ # API Client State Matching
+
+This rule ensures that client-side code accurately reflects the data structures provided by backend APIs.
+
+## Rule
+
+- Client-side type definitions (interfaces, types) **must** precisely match the structure (field names, data types, nullability, object/array structures) of the JSON data actually returned by the corresponding backend API endpoints.
+- **Do not** rely solely on API documentation or assumptions; always verify against live or sample responses.
+
+## Why?
+
+- **Prevents Runtime Errors:** Mismatched structures are a primary cause of `TypeError` (e.g., accessing properties on `undefined`), incorrect logic, and unexpected UI behavior.
+- **Reduces Debugging Time:** Ensures data is interpreted correctly from the start, avoiding hard-to-trace bugs stemming from incorrect assumptions about the data shape.
+- **Improves Code Reliability:** Explicitly defining accurate types makes the client code more robust and easier to maintain.
+
+## How?
+
+1.  **Inspect Actual Responses:** Use browser developer tools (Network tab), `curl`, Postman, or similar tools to examine the *exact* JSON response from the API endpoint you are consuming.
+2.  **Define Client Types:** Create TypeScript interfaces or types that mirror this verified structure precisely. Pay attention to:
+    *   Field names (case sensitivity matters).
+    *   Data types (`string`, `number`, `boolean`, `object`, `array`).
+    *   Whether fields can be `null` or are optional (`?`).
+    *   The structure of nested objects and arrays.
+3.  **Use Defined Types:** Apply these types to your state variables, function parameters, and return types involved in fetching or handling the API data.
+4.  **Update Client Logic:** Ensure all code accessing the API data (e.g., data fetching functions, reactive statements, template rendering) uses the correct field names and expects the correct data types as defined in your types.
+
+## Correct Example
+
+**Server Response (`GET /api/user/123`):**
+```json
+{
+  "userId": 123,
+  "userName": "Alice",
+  "isActive": true,
+  "lastLogin": "2023-10-27T10:00:00Z",
+  "preferences": {
+    "theme": "dark",
+    "notifications": null 
+  },
+  "roles": ["admin", "editor"]
+}
+```
+
+**Client-Side Type (TypeScript):**
+```typescript
+interface UserProfile {
+  userId: number;
+  userName: string;
+  isActive: boolean;
+  lastLogin: string;
+  preferences: {
+    theme: string;
+    notifications: string | null; // Matches null possibility
+  };
+  roles: string[];
+}
+```
+
+## Incorrect Example
+
+**Client-Side Type (Incorrect):**
+```typescript
+interface UserProfile {
+  id: number; // WRONG: Name mismatch (userId)
+  username: string; // WRONG: Case mismatch (userName)
+  active: boolean; // WRONG: Name mismatch (isActive)
+  lastLogin: Date; // WRONG: Type mismatch (string)
+  preferences: { // WRONG: Missing 'notifications' field entirely
+    theme: string;
+  };
+  roles: string[]; // Correct
+}
+```
+
+metadata:
+  priority: high
+  version: 1.0
