@@ -1,3 +1,4 @@
+import datetime
 from urllib import request, error, parse
 import json
 import time
@@ -62,9 +63,15 @@ class WitchardClient:
         try:
             params = parse.urlencode({'player_name': self.player_name})
             url = f"{self.server_url}/game/{self.game_id}/state?{params}"
-            with request.urlopen(url) as response:
-                return json.loads(response.read().decode('utf-8'))
+            print(url)
+            with request.urlopen(url, timeout=3) as response:
+                response_data = json.loads(response.read().decode('utf-8'))
+                print(response_data)
+                return response_data
         except error.URLError as e:
+            print(f"Fehler beim Abrufen des Spielstatus: {e}")
+            return None
+        except Exception as e:
             print(f"Fehler beim Abrufen des Spielstatus: {e}")
             return None
 
@@ -86,14 +93,16 @@ class WitchardClient:
     def wait_for_players(self):
         print("\nWarte auf andere Spieler...")
         while True:
+            print(datetime.datetime.now())
             game_state = self.get_game_state()
             if not game_state:
+                print("Game state not found")
                 continue
             
             current_players = len(game_state.get('players', []))
             required_players = game_state.get('required_players', 3)
             
-            self.clear_screen()
+            #self.clear_screen()
             print("Game ID:", self.game_id)
             print(f"Spieler im Spiel: {current_players}/{required_players}")
             print("\nAktuelle Spieler:")
