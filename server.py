@@ -18,7 +18,9 @@ class GameAction(BaseModel):
     game_id: str
     player_name: str
     action: str
-    value: int = None
+    card_index: int = None
+    suit_choice: int = None
+    prediction: int = None
 
 class GameStart(BaseModel):
     game_id: str
@@ -61,6 +63,51 @@ async def start_game(game_data: GameStart):
     
     game.start_game()
     return {"status": "started"}
+
+@app.post("/game/action")
+async def perform_action(action_data: GameAction):
+    if action_data.game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[action_data.game_id]
+    
+    # Check if it's this player's turn
+    if game.current_player != action_data.player_name:
+        raise HTTPException(status_code=400, detail="Not your turn")
+    
+    # Process different actions
+    if action_data.action == "predict":
+        if game.game_phase != "prediction":
+            raise HTTPException(status_code=400, detail="Not in prediction phase")
+        if action_data.prediction is None:
+            raise HTTPException(status_code=400, detail="Prediction value required")
+        result = game.make_prediction(action_data.player_name, action_data.prediction)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+        return {"status": "prediction_made"}
+    
+    elif action_data.action == "play_card":
+        if game.game_phase != "playing":
+            raise HTTPException(status_code=400, detail="Not in playing phase")
+        if action_data.card_index is None:
+            raise HTTPException(status_code=400, detail="Card index required")
+        result = game.play_card(action_data.player_name, action_data.card_index)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+        return {"status": "card_played"}
+    
+    elif action_data.action == "choose_trump":
+        if game.game_phase != "choose_trump":
+            raise HTTPException(status_code=400, detail="Not in choose trump phase")
+        if action_data.suit_choice is None:
+            raise HTTPException(status_code=400, detail="Suit choice required")
+        result = game.choose_trump(action_data.player_name, action_data.suit_choice)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+        return {"status": "trump_chosen"}
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 
