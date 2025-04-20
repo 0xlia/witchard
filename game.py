@@ -1,6 +1,6 @@
 from card import Card
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 SUITS = ["🔴", "🟡", "🟢", "🔵"]
 
@@ -11,7 +11,20 @@ class WitchardGame:
         self.round_number = 0
         self.scores = {}
         self.deck = self._create_deck()
-        
+        self.hands = {}
+        self.trumpf_card = None
+        self.played_cards = []
+        self.current_player = None
+        self.current_trick = []
+        self.trick_starter = None
+        self.game_phase = "not_started"  # not_started, choose_trump, prediction, playing, round_end, game_over
+        self.predictions = {}
+        self.tricks_won = {}
+        self.current_player_index = 0
+        self.current_round_order = []
+        self.waiting_for_trump_choice = False
+        self.trump_chooser = None
+           
     def _create_deck(self) -> List[Card]:
         deck = []
         
@@ -31,225 +44,210 @@ class WitchardGame:
     
     def _shuffle_cards(self):
         random.shuffle(self.deck)
-        
+    
+    def add_player(self, player_name: str) -> bool:
+        if len(self.player_names) >= self.num_players:
+            return False
+        if player_name in self.player_names:
+            return False
+        self.player_names.append(player_name)
+        self.scores[player_name] = 0
+        self.hands[player_name] = []
+        return True    
+    
     def start_game(self):
-        print("✨ Welcome to Witchard! ✨")
-        
-        # Enter player names
-        self.player_names = self._get_player_names()
+        # Initialize scores
         self.scores = {player: 0 for player in self.player_names}
-            
-        # Main game loop
-        rounds = 60 // self.num_players
-        for round_num in range(1, rounds + 1):
-            self.round_number += 1
-            print(f"\n▪️▪️▪️▪️▪️▪️ ROUND {self.round_number} ▪️▪️▪️▪️▪️▪️")
-            self._play_round()
-            
-        self._show_final_score()
-
-    def _get_player_names(self) -> list:
-        player_names = []
-        print("\nEnter player names:")
-        
-        for i in range(self.num_players):
-            while True:
-                name = input(f"Player {i+1}: ").strip()
-                if name == "":
-                    print("The name cannot be empty!")
-                    continue
-                if name in player_names:
-                    print("This name is already taken!")
-                    continue
-                player_names.append(name)
-                break
-                
-        return player_names
-
-
-    def _play_round(self):
+        # Start with round 1
+        self._start_new_round()
+    
+    def _start_new_round(self):
+        self.round_number += 1
         self._shuffle_cards()
-        hands = self._deal_cards()
-        trumpf_card = self._determine_trumpf(hands)
+        self._deal_cards()
+        self.tricks_won = {player: 0 for player in self.player_names}
+        self.predictions = {}
+        self.played_cards = []
+        self.current_trick = []
         
-        # Determine the starting player for this round
-        start_player_index = (self.round_number - 1) % len(self.player_names)
-        # Create the player order for the entire round
-        current_player_order = self.player_names[start_player_index:] + self.player_names[:start_player_index]
+        # Determine starter for this round
+        starter_index = (self.round_number - 1) % len(self.player_names)
+        self.current_round_order = self.player_names[starter_index:] + self.player_names[:starter_index]
+        self.current_player = self.current_round_order[0]
+        self.current_player_index = 0
+        self.trick_starter = self.current_player
         
-        print(f"\nStarting player: {current_player_order[0]}")
-        print(f"Trumpf: {trumpf_card}")
+        # Determine trumpf
+        self._determine_trumpf()
         
-        predictions = self._get_predictions(hands, current_player_order)
-        tricks_won = self._play_tricks(self.round_number, hands, trumpf_card, current_player_order)
-        self._update_scores(predictions, tricks_won)
+        # If trumpf needs to be chosen, set the phase accordingly
+        if self.waiting_for_trump_choice:
+            self.game_phase = "choose_trump"
+        else:
+            # Otherwise, move to prediction phase
+            self.game_phase = "prediction"
 
-    def _deal_cards(self) -> dict:
-        hands = {player: [] for player in self.player_names}
+    def _deal_cards(self):
+        self.hands = {player: [] for player in self.player_names}
         for _ in range(self.round_number):
             for player in self.player_names:
-                hands[player].append(self.deck.pop())
-        return hands
+                if len(self.deck) > 0:
+                    self.hands[player].append(self.deck.pop())
 
-    def _determine_trumpf(self, hands: dict) -> Card:
+    def _determine_trumpf(self):
+        self.waiting_for_trump_choice = False
+        self.trump_chooser = None
+        
         if len(self.deck) > 0:
-            trumpf_card = self.deck.pop()
+            self.trumpf_card = self.deck.pop()
             
             # If a Jester is revealed, there is no trump suit for this round
-            if trumpf_card.value == 0:
-                print("A 💀 Jester was revealed - No trump suit this round!")
-                return None
+            if self.trumpf_card.value == 0:
+                return
                 
             # If a WITCH is revealed, the last player can choose the trump suit
-            if trumpf_card.value == 420:
-                last_player = self.player_names[(self.round_number - 1 + self.num_players - 1) % self.num_players]
-                print(f"A 🧙 Witch was revealed! {last_player} can choose the trump suit.")
+            if self.trumpf_card.value == 420:
+                self.waiting_for_trump_choice = True
+                last_player_index = (self.round_number - 1 + self.num_players - 1) % self.num_players
+                self.trump_chooser = self.player_names[last_player_index]
+                self.current_player = self.trump_chooser
+        else:
+            self.trumpf_card = None
 
-                if self.round_number == 1:
-                    # print all cards of other players than last player
-                    print("\nCards of other players:")
-                    for player in self.player_names:
-                        if player != last_player:
-                            print(f"\n{player}'s cards:")
-                            for card in hands[player]:
-                                print(card)
-                
-                while True:
-                    try:
-                        choice = int(input(f"{last_player}, Choose a suit: (0: RED, 1: YELLOW, 2: GREEN, 3: BLUE): "))
-                        if 0 <= choice < len(SUITS):
-                            chosen_suit = SUITS[choice]
-                            return Card(chosen_suit, 420)  # Return WITCH with chosen suit
-                        else:
-                            print("Invalid choice!")
-                    except ValueError:
-                        print("Invalid input!")
-                
-            return trumpf_card
-        return None
-
-    def _get_predictions(self, hands: dict, player_order: list) -> dict:
-        predictions = {}
-        total_predictions = 0
-        print("\n▪️▪️▪️ Predictions ▪️▪️▪️")
+    def choose_trump(self, player_name: str, suit_choice: int) -> Dict[str, Any]:
+        if self.game_phase != "choose_trump":
+            return {"success": False, "message": "Not in choose trump phase"}
         
-        for i, player in enumerate(player_order):
-            # Round 1: Show other players' cards
-            if self.round_number == 1:
-                print(f"\nCards of other players:")
-                for other_player in player_order:
-                    if other_player != player:
-                        print(f"\n{other_player}'s cards:")
-                        for card in hands[other_player]:
-                            print(card)
-            else:
-                # Normal game: Show own cards
-                print(f"\n{player}'s cards:")
-                for card in hands[player]:
-                    print(card)
-                
-            # For the last player, check if prediction would equal round number
-            is_last_player = i == len(player_order) - 1
-            round_num = len(hands[player])
+        if player_name != self.trump_chooser:
+            return {"success": False, "message": "You are not allowed to choose trump"}
+        
+        if not 0 <= suit_choice < len(SUITS):
+            return {"success": False, "message": "Invalid suit choice"}
+        
+        chosen_suit = SUITS[suit_choice]
+        self.trumpf_card = Card(chosen_suit, 420)  # WITCH with chosen suit
+        self.waiting_for_trump_choice = False
+        
+        # Move to prediction phase
+        self.game_phase = "prediction"
+        self.current_player = self.current_round_order[0]
+        self.current_player_index = 0
+        
+        return {"success": True}
+
+    def make_prediction(self, player_name: str, prediction: int) -> Dict[str, Any]:
+        if self.game_phase != "prediction":
+            return {"success": False, "message": "Not in prediction phase"}
+        
+        if player_name != self.current_player:
+            return {"success": False, "message": "Not your turn"}
+        
+        if prediction < 0 or prediction > self.round_number:
+            return {"success": False, "message": "Prediction must be between 0 and the round number"}
+        
+        # Check if this is the last player and if sum of predictions would equal round number
+        is_last_player = self.current_player_index == len(self.player_names) - 1
+        current_sum = sum(self.predictions.values())
+        
+        if is_last_player and (current_sum + prediction) == self.round_number:
+            return {"success": False, "message": f"Sum of predictions cannot equal {self.round_number}"}
+        
+        # Store the prediction
+        self.predictions[player_name] = prediction
+        
+        # Move to the next player
+        self.current_player_index = (self.current_player_index + 1) % len(self.player_names)
+        
+        # If all players have made predictions, start playing
+        if len(self.predictions) == len(self.player_names):
+            self.game_phase = "playing"
+            self.current_player_index = 0
+            self.current_player = self.current_round_order[0]
+            self.trick_starter = self.current_player
+        else:
+            self.current_player = self.current_round_order[self.current_player_index]
+        
+        return {"success": True}
+
+    def play_card(self, player_name: str, card_index: int) -> Dict[str, Any]:
+        if self.game_phase != "playing":
+            return {"success": False, "message": "Not in playing phase"}
+        
+        if player_name != self.current_player:
+            return {"success": False, "message": "Not your turn"}
+        
+        player_hand = self.hands[player_name]
+        
+        if not 0 <= card_index < len(player_hand):
+            return {"success": False, "message": "Invalid card index"}
+        
+        selected_card = player_hand[card_index]
+        
+        # Check if card play is legal
+        if self.current_trick:
+            lead_suit = self.current_trick[0].suit
             
-            while True:
-                try:
-                    pred = int(input(f"\n{player}, how many tricks will you win? "))
-                    if pred < 0 or pred > round_num:
-                        print("Prediction must be between 0 and the round number!")
-                        continue
-                        
-                    if is_last_player and (total_predictions + pred) == round_num:
-                        print(f"Sum of predictions cannot equal {round_num}! Please choose another number.")
-                        continue
-                        
-                    predictions[player] = pred
-                    total_predictions += pred
-                    break
-                except ValueError:
-                    print("Invalid input!")
-            print("\n▪️▪️▪️▪️▪️▪️")
+            # If the first card is a JESTER, find the first non-JESTER card's suit
+            if self.current_trick[0].value == 0 and len(self.current_trick) > 1:
+                for card in self.current_trick[1:]:
+                    if card.value != 0:
+                        lead_suit = card.suit
+                        break
+            
+            # Check if player needs to follow suit (unless playing WITCH or JESTER)
+            has_lead_suit = any(card.suit == lead_suit for card in player_hand)
+            if has_lead_suit and selected_card.suit != lead_suit and selected_card.value not in [0, 420]:
+                return {"success": False, "message": "You must follow suit"}
         
-        # Show total predictions vs round number
-        print(f"\nTotal predictions: {total_predictions}/{round_num}")
+        # Play the card
+        played_card = player_hand.pop(card_index)
+        self.current_trick.append(played_card)
+        self.played_cards.append(played_card)
         
-        return predictions
+        # Move to the next player
+        self.current_player_index = (self.current_player_index + 1) % len(self.player_names)
+        self.current_player = self.current_round_order[self.current_player_index]
+        
+        # If all players have played a card, evaluate the trick
+        if len(self.current_trick) == len(self.player_names):
+            self._evaluate_trick()
+        
+        return {"success": True}
+
+    def _evaluate_trick(self):
+        # Determine the winner of the trick
+        winning_card = self._get_winning_card(self.current_trick)
+        
+        # Find the player who played the winning card
+        winner_index = 0
+        for i, card in enumerate(self.current_trick):
+            if card == winning_card:
+                winner_index = i
+                break
+        
+        # Determine the position relative to trick_starter
+        winner_player_index = (self.current_round_order.index(self.trick_starter) + winner_index) % len(self.player_names)
+        trick_winner = self.current_round_order[winner_player_index]
+        
+        # Update tricks won
+        self.tricks_won[trick_winner] += 1
+        
+        # Reset for next trick
+        self.current_trick = []
+        
+        # Next trick is started by the winner
+        self.trick_starter = trick_winner
+        self.current_player = trick_winner
+        self.current_player_index = self.current_round_order.index(trick_winner)
+        
+        # Check if round is complete
+        if sum(self.tricks_won.values()) == self.round_number:
+            self._end_round()
     
-    def _play_tricks(self, round_num: int, hands: dict, trumpf_card: Card, player_order: list) -> dict:
-        tricks_won = {player: 0 for player in self.player_names}
-        
-        for trick in range(round_num):
-            print(f"\n▪️▪️▪️  Trick {trick + 1} ▪️▪️▪️ ")
-            played_cards = []
-            played_by = {}
-           
-            for player in player_order:
-                # If only one card is left, play it automatically
-                if len(hands[player]) == 1:
-                    played_card = hands[player].pop(0)
-                    played_cards.append(played_card)
-                    played_by[played_card] = player
-                    print(f"\n{player} plays {played_card}")
-                    print("\n▪️▪️▪️▪️▪️▪️")
-                    continue
-
-                # Show player's cards
-                print(f"\n{player}'s cards:")
-                for i, card in enumerate(hands[player]):
-                    print(f"{i}: {card}")      
-
-                # Determine the leading suit (first card played in the trick)
-                lead_suit = played_cards[0].suit if played_cards else None
-                
-                # If the first card is a JESTER and there are more cards,
-                # set the leading suit to the first non-JESTER card
-                if played_cards and played_cards[0].value == 0 and len(played_cards) > 1:
-                    for card in played_cards[1:]:
-                        if card.value != 0:
-                            lead_suit = card.suit
-                            break
-                
-                while True:
-                    try:
-                        choice = int(input(f"\n{player}, pick a card (0-{len(hands[player])-1}): "))
-                        if 0 <= choice < len(hands[player]):
-                            selected_card = hands[player][choice]
-                            
-                            # Check if the card choice is legal
-                            # If the first card is a WITCH, suit doesn't need to be followed
-                            if lead_suit and not any(c.value == 420 for c in played_cards):
-                                # Check if player can follow suit
-                                has_lead_suit = any(card.suit == lead_suit for card in hands[player])
-                                
-                                # If player can follow suit, they must do so
-                                # Exception: WITCH and JESTER can always be played
-                                if has_lead_suit and selected_card.suit != lead_suit and \
-                                   selected_card.value not in [0, 420]:
-                                    print(f"You must follow suit!")
-                                    continue
-                            
-                            # If the choice is legal, play the card
-                            played_card = hands[player].pop(choice)
-                            played_cards.append(played_card)
-                            played_by[played_card] = player
-                            print(f"\n{player} plays {played_card}")
-                            break
-                        else:
-                            print("Invalid card number!")
-                    except ValueError:
-                        print("Invalid input!")
-                print("\n▪️▪️▪️▪️▪️▪️")
+    def _get_winning_card(self, played_cards: List[Card]) -> Card:
+        if not played_cards:
+            return None
             
-            winning_card = self._get_winning_card(played_cards, trumpf_card)
-            
-            # Determine trick winner and update scores
-            trick_winner = played_by[winning_card]
-            tricks_won[trick_winner] += 1
-            print(f"\n{trick_winner} wins the trick with {winning_card}!")
-            
-        return tricks_won
-    
-    def _get_winning_card(self, played_cards: list, trumpf_card: Card) -> Card:
         # Determine the winning card
         winning_card = played_cards[0]
         lead_suit = played_cards[0].suit
@@ -270,7 +268,7 @@ class WitchardGame:
             # If no WITCH has been played yet
             elif winning_card.value != 420:
                 # If trump was played and winning card is not trump
-                if trumpf_card and card.suit == trumpf_card.suit and winning_card.suit != trumpf_card.suit:
+                if self.trumpf_card and card.suit == self.trumpf_card.suit and winning_card.suit != self.trumpf_card.suit:
                     winning_card = card
                 # If same suit was played and value is higher
                 elif card.suit == lead_suit and card.value > winning_card.value:
@@ -278,27 +276,129 @@ class WitchardGame:
         
         return winning_card
     
-    def _update_scores(self, predictions: dict, tricks_won: dict):
+    def _end_round(self):
+        # Calculate scores for the round
+        self._update_scores()
+        
+        # Check if game is over
+        if self.round_number >= 60 // self.num_players:
+            self.game_phase = "game_over"
+        else:
+            # Start a new round
+            self.game_phase = "round_end"
+            self._start_new_round()
+    
+    def _update_scores(self):
         for player in self.player_names:
-            # Vorhersage und tatsächlich gewonnene Stiche
-            predicted = predictions[player]
-            actual = tricks_won[player]
+            # Predicted and actual tricks won
+            predicted = self.predictions[player]
+            actual = self.tricks_won[player]
             
-            # Punkteberechnung
+            # Calculate points
             if predicted == actual:
-                # Bonus von 20 Punkten für korrekte Vorhersage
-                # Plus 10 Punkte pro gewonnenem Stich
+                # Bonus of 20 points for correct prediction
+                # Plus 10 points per trick won
                 points = 20 + (actual * 10)
             else:
-                # Minus 10 Punkte pro falsch vorhergesagtem Stich
+                # Minus 10 points per difference between prediction and actual
                 difference = abs(predicted - actual)
                 points = -10 * difference
                 
-            # Aktualisiere den Spielstand
+            # Update score
             self.scores[player] += points
+
+    def _card_to_dict(self, card):
+        """Helper method to convert Card to dict or return None if card is None"""
+        if card is None:
+            return None
+        return {
+            "suit": card.suit,
+            "value": card.value,
+            "display": str(card)
+        }
+    
+    def _cards_to_dict(self, cards):
+        """Helper method to convert a list of Cards to a list of dicts"""
+        return [self._card_to_dict(card) for card in cards]
+
+    def get_player_state(self, player_name: str) -> dict:
+        is_current_player = self.current_player == player_name
+        
+        # Base state information
+        state = {
+            "is_your_turn": is_current_player,
+            "players": self.player_names,
+            "num_players": self.num_players,
+            "game_started": self.game_phase != "not_started",
+            "scores": self.scores,
+            "round": self.round_number,
+            "trumpf": self._card_to_dict(self.trumpf_card),
+            "played_cards": self._cards_to_dict(self.played_cards),
+            "current_trick": self._cards_to_dict(self.current_trick),
+            "hand": self._cards_to_dict(self.hands.get(player_name, [])),
+            "phase": self.game_phase,
+            "predictions": self.predictions,
+            "tricks_won": self.tricks_won
+        }
+        
+        # Add available actions for current player
+        if is_current_player:
+            actions = []
             
-            # Zeige die Rundenauswertung
-            print(f"\n{player}:")
-            print(f"Predicted: {predicted}, Won: {actual}")
-            print(f"Points this round: {points}")
-            print(f"Total score: {self.scores[player]}")
+            if self.game_phase == "choose_trump" and player_name == self.trump_chooser:
+                actions.append({
+                    "action": "choose_trump",
+                    "options": [{"id": i, "suit": suit} for i, suit in enumerate(SUITS)]
+                })
+                
+            elif self.game_phase == "prediction":
+                valid_predictions = list(range(self.round_number + 1))
+                # If last player, check if any prediction would make sum equal to round_number
+                if self.current_player_index == len(self.player_names) - 1:
+                    current_sum = sum(self.predictions.values())
+                    invalid_prediction = self.round_number - current_sum
+                    if 0 <= invalid_prediction <= self.round_number:
+                        valid_predictions.remove(invalid_prediction)
+                        
+                actions.append({
+                    "action": "predict",
+                    "options": valid_predictions
+                })
+                
+            elif self.game_phase == "playing":
+                player_hand = self.hands.get(player_name, [])
+                valid_cards = []
+                
+                # If not first card in trick, check suit following
+                if self.current_trick:
+                    lead_suit = self.current_trick[0].suit
+                    
+                    # If first card is JESTER, find first non-JESTER
+                    if self.current_trick[0].value == 0 and len(self.current_trick) > 1:
+                        for card in self.current_trick[1:]:
+                            if card.value != 0:
+                                lead_suit = card.suit
+                                break
+                    
+                    has_lead_suit = any(card.suit == lead_suit for card in player_hand)
+                    
+                    # If player has lead suit, they must follow
+                    if has_lead_suit:
+                        for i, card in enumerate(player_hand):
+                            if card.suit == lead_suit or card.value in [0, 420]:  # Can always play WITCH or JESTER
+                                valid_cards.append({"index": i, "card": self._card_to_dict(card)})
+                    else:
+                        # Can play any card
+                        valid_cards = [{"index": i, "card": self._card_to_dict(card)} for i, card in enumerate(player_hand)]
+                else:
+                    # First to play, can play any card
+                    valid_cards = [{"index": i, "card": self._card_to_dict(card)} for i, card in enumerate(player_hand)]
+                
+                actions.append({
+                    "action": "play_card",
+                    "options": valid_cards
+                })
+            
+            state["available_actions"] = actions
+        
+        return state

@@ -1,0 +1,45 @@
+---
+description: 
+globs: .mdc
+alwaysApply: false
+---
+# Cursor Rule Files Location
+
+This rule ensures that all Cursor rule files are placed in the correct directory, use the right naming conventions, and are easy to find and manage.
+
+## Rule
+
+- All Cursor rule files **must** be placed in the `.cursor/rules/` directory at the root of your project.
+- Each rule should be in its own file.
+- Rule files must use the `.mdc` extension.
+- Use **kebab-case** for filenames (e.g., `my-cool-rule.mdc`).
+- The filename should describe the rule's purpose.
+
+## Why?
+
+- Keeps your rules organized and easy to find.
+- Prevents confusion about where rules should live.
+- Makes version control and collaboration easier.
+
+## Correct Examples
+
+```
+.cursor/rules/
+ ├── cursor-rule-files-location.mdc
+ ├── clickhouse-query-best-practices.mdc
+ └── another-rule.mdc
+```
+
+## Incorrect Examples
+
+```
+rules/my-rule.mdc
+my-rule.mdc
+.cursor/other-rules/another-rule.mdc
+```
+
+**Never** place rule files in the project root, in subdirectories outside `.cursor/rules`, or in any other location.
+
+metadata:
+  priority: high
+  version: 1.0

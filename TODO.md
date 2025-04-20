@@ -1,6 +1,18 @@
 # TODO
 - Tests
 - Server
+    - Fast API einbauen 
+    - jeden Input mit curl requests
+    - erst mit einem client spiel spielen 
+    - dann mit mehreren clients spielen
+    - console utility: pullt sich alle x sek per curl gamestate, zeigt gamestate, zeigt wenn man dran ist welche actions man machen kann, action als request an server
+- Endpoints
+    - gamestate
+    - available moves
+    - make move 
+    - (join game) -> key zurück mit auth header zu game zuordnen 
+    - (create game)
+    - 
 - Client via curl
 - Basic Access Control (Secret Key generieren, in Header schicken)
 - Deployment (Docker)

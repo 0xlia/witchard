@@ -1,0 +1,80 @@
+---
+description: 
+globs: .py
+alwaysApply: false
+---
+---
+description: 
+globs: .py
+alwaysApply: false
+---
+# Python Style Guide
+
+This rule defines our Python code style conventions for the project.
+
+## General Style
+
+- Follow [PEP 8](mdc:https:/www.python.org/dev/peps/pep-0008) for general style guidelines
+- Use 4 spaces for indentation (no tabs)
+- Maximum line length of 88 characters (Black default)
+- Use double quotes for docstrings (triple double quotes)
+- Use single quotes for regular strings when possible
+- Prefer snake_case for function and variable names
+- Use CamelCase for class names
+- Group imports in the following order:
+  1. Standard library imports
+  2. Related third-party imports
+  3. Local application/library specific imports
+- Sort imports alphabetically within each group
+- Add a blank line between each import group
+
+## Documentation
+
+- All modules, classes, and public functions should have docstrings
+- Docstrings should prioritize explaining WHY the code exists rather than WHAT it does
+- Follow the Google docstring format
+- Keep docstrings concise but informative
+
+## Type Hints
+
+- Use type hints for all function parameters and return values
+- Use Optional[T] for parameters that can be None
+- Use Union[T1, T2] for parameters that can be multiple types
+- Use typing.Dict, typing.List, etc. for container types
+
+## Error Handling
+
+- Use specific exception types instead of generic ones
+- Use assert statements liberally
+- Handle exceptions at the appropriate level
+- Document expected exceptions in function docstrings
+- Log exceptions with appropriate context
+
+## Testing
+
+- Write tests for all public functions
+- Use pytest for test framework
+- Mock external dependencies
+- Structure tests as:
+  1. Arrange (set up test data)
+  2. Act (call the function being tested)
+  3. Assert (verify the results)
+
+## Code Organization
+
+- Keep functions and methods small and focused
+- Use meaningful names that describe what the function does
+- Order methods in a class: constructor, public methods, private methods
+- Group related functionality into modules
+- Keep modules small and focused on a single responsibility
+
+## Tools
+
+- Use Black for code formatting
+- Use Ruff for linting
+- Use mypy for static type checking
+- Use pytest for testing
+
+metadata:
+  priority: high
+  version: 1.0 
