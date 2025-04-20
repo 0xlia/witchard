@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from game import WitchardGame
 import uvicorn
@@ -6,6 +7,21 @@ import secrets
 
 app = FastAPI()
 games = {}
+
+# CORS configuration
+origins = [
+    "http://localhost:5173", # SvelteKit dev server
+    "http://localhost:4173", # SvelteKit preview server
+    # Add any other origins if necessary (e.g., your deployed frontend URL)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allow all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"], # Allow all headers
+)
 
 class GameCreate(BaseModel):
     num_players: int
@@ -108,6 +124,21 @@ async def perform_action(action_data: GameAction):
     
     else:
         raise HTTPException(status_code=400, detail="Invalid action")
+
+# --- NEW ENDPOINT for Lobbies --- 
+@app.get("/games/lobbies")
+async def list_lobbies():
+    open_lobbies = []
+    for game_id, game in games.items():
+        if game.game_phase == "not_started":
+            open_lobbies.append({
+                "game_id": game_id,
+                "num_players_required": game.num_players,
+                "current_player_count": len(game.player_names),
+                "players": game.player_names # Optional: send player names too
+            })
+    return open_lobbies
+# --- End of New Endpoint ---
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 
