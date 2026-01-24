@@ -1,0 +1,127 @@
+@import url(https://fonts.bunny.net/css?family=nunito:500);
+@import "css_reset.css";
+
+
+:root {
+    --primary-bg-color: #09090b;
+    --secondary-bg-color: #52525c;
+    --pink-text: #F971BA;
+    --purple-text: #C77DFC; 
+    --orange-text: #FF852E;
+    --white-text:#fce7f3;
+    
+    --green-text: oklch(72.3% 0.219 149.579);
+    /* rosa: D69ECB */
+    /* https://coolors.co/586095-2b396e-9599ae-8242d5-2c3880-2c2b57-221656-d69ecb */
+}
+
+
+/* *{
+    /* outline: 1px solid red;*/
+/* } */ 
+
+body{
+    margin: 2em;
+    background-color: var(--primary-bg-color);
+    font-family: 'Nunito', sans-serif;
+    color:var(--white-text);
+    line-height: 1.5;
+}
+
+main{
+    margin-top: 2em;
+    
+    
+}
+
+.row{
+    justify-content: space-around;
+    gap: 2em;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+h1{
+    color: var(--pink-text);
+    text-align: center;
+    /* text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8); */
+    
+}
+
+h2{
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 1px solid gainsboro;
+    /* text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8); */
+}
+
+form{
+    margin: 1em;
+}
+
+label{
+    display: block;
+
+}
+
+input{
+    background-color: transparent;
+    
+    border-radius: 5px;
+    color: var(--white-text);
+}
+
+
+
+
+
+.column {
+    flex:1;
+    padding: 1rem;
+    input{
+        width: 100%;
+        margin-bottom: 1em;
+    }
+    button{
+        border-radius: 5px;
+        background-color: var(--secondary-bg-color);
+        color: var(--white-text);
+        display: block;
+        margin-inline: auto;
+        width: 50%;
+        text-transform: uppercase;
+    }
+}
+
+.create_game {
+    input{
+        border: 2px solid var(--purple-text);
+    }
+    button{
+        background: var(--secondary-bg-color);
+    }
+
+}
+
+.join_game {
+    input{
+        border: 2px solid var(--orange-text);
+    }
+    button{
+        background: var(--secondary-bg-color);
+    }
+}
+
+#create_game_title{
+    color: var(--purple-text);
+    text-transform: uppercase;
+    border-bottom: 1px solid gainsboro;
+}
+
+#join_game_title{
+    color: var(--orange-text);
+}
+
+#current_game_title{
+    color: var(--green-text);
+}
