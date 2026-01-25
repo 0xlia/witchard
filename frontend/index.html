@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="dark">
     <title>0xWitchard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="index.js" type="module"></script>
 </head>
 <body>
     <header>
@@ -16,11 +17,11 @@
         <div class="row">
             <div class="column create_game">
                 <h2 id="create_game_title">create game</h2>
-                <form>
+                <form id="create_game_input">
                     <!-- input new game -->
                     <div>
-                        <label for="playername" >Your name:</label>
-                        <input id="playername" type="text">
+                        <label for="playername_create" >Your name:</label>
+                        <input id="playername_create" type="text">
                     </div>
                     <div>
                         <label for="playernumber">Number of players:</label>
@@ -36,10 +37,10 @@
 
             <div class="column join_game">
                 <h2 id="join_game_title">JOIN GAME</h2>
-                <form>
+                <form id="join_game_input">
                     <div>
-                        <label for="playername">Your name:</label>
-                        <input id="playername" type="text">
+                        <label for="playername_join">Your name:</label>
+                        <input id="playername_join" type="text">
                     </div>
                     <div>
                         <label for="gameidinput">Game ID:</label>
