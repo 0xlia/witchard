@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- externen shit laden -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>0xWitchard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="index.js" type="module"></script>
+</head>
+<body>
+    <header>
+        <h1>0xWitchard Card Game</h1>
+    </header>
+    <main>
+        <div class="row">
+            <div class="column create_game">
+                <h2 id="create_game_title">create game</h2>
+                <form id="create_game_input">
+                    <!-- input new game -->
+                    <div>
+                        <label for="playername_create" >Your name:</label>
+                        <input id="playername_create" type="text">
+                    </div>
+                    <div>
+                        <label for="playernumber">Number of players:</label>
+                        <input id="playernumber" type="number" min="3" max="6">
+                    </div>
+                    
+                    <!-- new game button -->
+                    <button type="submit">
+                        Create Game
+                    </button>
+                </form>
+            </div>
+
+            <div class="column join_game">
+                <h2 id="join_game_title">JOIN GAME</h2>
+                <form id="join_game_input">
+                    <div>
+                        <label for="playername_join">Your name:</label>
+                        <input id="playername_join" type="text">
+                    </div>
+                    <div>
+                        <label for="gameidinput">Game ID:</label>
+                        <input id="gameidinput" type="text">
+                    </div>
+                    
+
+                    <button type="submit">
+                        Join Game
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+
+        <div class="row">
+            <div class="column">
+                <h2 id="current_game_title">Current Game</h2>
+                <form>
+                    <label for="gameid">Game ID:</label>
+                    <output id="gameid" readonly>
+
+                    <label for="players">Players:</label>
+                    <output id="players"></output>
+                </form>
+                
+            </div>
+
+            <div class="column">
+                spooky bild
+            </div>
+
+            
+
+
+        
+        </div>
+    </main>
+</body>
+</html>
+
+<!-- .row>.column*2>h2{Something}+label{Label}+output     -->
