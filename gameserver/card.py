@@ -1,15 +1,16 @@
 class Card:
     def __init__(self, suit: str, value: int):
         self.suit = suit  # 🔴, 🟡, 🟢, 🔵
-        self.value = value  # 0 (JESTER), 1-13 (normal), 420 (WITCH)
+        self.value = value  # 0 (JESTER), 1-13 (normal), 14 (WITCH)
         
+    # to string
     def __str__(self) -> str:
         if self.value == 0:
             return f"💀 {self.suit} JESTER"
-        elif self.value == 420:
+        elif self.value == 14:
             return f"🧙 {self.suit} WITCH"
         else:
-            # For normal cards, show the value and suit
+            # For normal cards, print the value and suit
             return f"{self.suit} {self.value}"
     
     def __repr__(self) -> str:
@@ -20,6 +21,7 @@ class Card:
             return False
         return self.suit == other.suit and self.value == other.value
     
+    # notiz an mich: karten durchnummerieren, und frontend nur kartennummer geben. 
     def to_dict(self) -> dict:
         """Convert the card to a dictionary representation for API responses"""
         return {
