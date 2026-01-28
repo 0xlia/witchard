@@ -1,31 +1,16 @@
+from dataclasses import dataclass
+
+
+# TODO: add enum suit
+
+@dataclass
 class Card:
-    def __init__(self, suit: str, value: int):
-        self.suit = suit  # 🔴, 🟡, 🟢, 🔵
-        self.value = value  # 0 (JESTER), 1-13 (normal), 14 (WITCH)
-        
-    # to string
-    def __str__(self) -> str:
-        if self.value == 0:
-            return f"💀 {self.suit} JESTER"
-        elif self.value == 14:
-            return f"🧙 {self.suit} WITCH"
-        else:
-            # For normal cards, print the value and suit
-            return f"{self.suit} {self.value}"
-    
-    def __repr__(self) -> str:
-        return self.__str__()
-    
+    """Class that represents a Wizard playing card"""
+    suit: str
+    value: int
+
     def __eq__(self, other):
         if not isinstance(other, Card):
             return False
         return self.suit == other.suit and self.value == other.value
     
-    # notiz an mich: karten durchnummerieren, und frontend nur kartennummer geben. 
-    def to_dict(self) -> dict:
-        """Convert the card to a dictionary representation for API responses"""
-        return {
-            "suit": self.suit,
-            "value": self.value,
-            "display": str(self)
-        }
