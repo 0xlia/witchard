@@ -1,6 +1,7 @@
 from card import Card
 import random
-from typing import List, Tuple, Dict, Any
+import uuid
+from typing import List, Dict, Any
 
 # TODO add SUITS enum and PHASE enum
 # IDEE: played cards dict aus player und card instead of played_cards and current_trick
@@ -9,6 +10,7 @@ SUITS = ["🔴", "🟡", "🟢", "🔵"]
 
 class WitchardGame:
     def __init__(self, num_players: int):
+        self.id = uuid.uuid4()
         # players
         self.num_players = num_players
         self.player_names = []
